@@ -81,10 +81,10 @@ function mostrarAvatarComMoldura(userobj) {
     moldura.src = CONFIG.molduraURL;
  
     moldura.oncomplete = function() {
-        Users.local(function(u) {
-            if (u.vroom === userobj.vroom) {
-                u.scribble(avatarScribble);
-                u.scribble(moldura);
+        Users.local(function(localUser) {
+            if (localUser.vroom === userobj.vroom) {
+                localUser.scribble(avatarScribble);
+                localUser.scribble(moldura);
             }
         });
     };
@@ -108,8 +108,8 @@ function bandeiraEmoji(countryCode) {
 // ======================================================
 //  BUSCAR PAÍS REAL (cache por IP)
 // ======================================================
-function obterPaisUsuario(user) {
-    var ip = user.externalIp;
+function obterPaisUsuario(userobj) {
+    var ip = userobj.externalIp;
  
     if (paisUsuario[ip]) return;
  
@@ -152,12 +152,12 @@ function traduzirPara(texto, idioma, onSuccess) {
     req.download();
 }
 
-function traduzirAutomatico(user, textoOriginal) {
-    obterPaisUsuario(user);
+function traduzirAutomatico(userobj, textoOriginal) {
+    obterPaisUsuario(userobj);
  
     // Verifica cache
     if (cacheTraducao[textoOriginal]) {
-        enviarMensagem(user, textoOriginal, cacheTraducao[textoOriginal]);
+        enviarMensagem(userobj, textoOriginal, cacheTraducao[textoOriginal]);
         return;
     }
  
@@ -165,16 +165,16 @@ function traduzirAutomatico(user, textoOriginal) {
     traduzirPara(textoOriginal, "pt", function(traduzPT) {
         if (textoOriginal.toLowerCase() !== traduzPT.toLowerCase()) {
             cacheTraducao[textoOriginal] = traduzPT;
-            enviarMensagem(user, textoOriginal, traduzPT);
+            enviarMensagem(userobj, textoOriginal, traduzPT);
         } else {
             // Se PT não funcionou, tenta ES
             traduzirPara(textoOriginal, "es", function(traduzES) {
                 if (textoOriginal.toLowerCase() !== traduzES.toLowerCase()) {
                     cacheTraducao[textoOriginal] = traduzES;
-                    enviarMensagem(user, textoOriginal, traduzES);
+                    enviarMensagem(userobj, textoOriginal, traduzES);
                 } else {
                     // Sem tradução necessária
-                    enviarMensagem(user, textoOriginal, textoOriginal);
+                    enviarMensagem(userobj, textoOriginal, textoOriginal);
                 }
             });
         }
@@ -216,14 +216,14 @@ function caixaAres(nome, original, traduzido, countryCode) {
 // ======================================================
 //  ENVIO DUAL (Ares + Web) - Unificado
 // ======================================================
-function enviarDual(user, conteudoAres, conteudoWebArray) {
-    Users.local(function(u) {
-        if (u.vroom === user.vroom) {
-            if (u.canHTML) {
-                u.sendHTML(conteudoAres);
+function enviarDual(userobj, conteudoAres, conteudoWebArray) {
+    Users.local(function(localUser) {
+        if (localUser.vroom === userobj.vroom) {
+            if (localUser.canHTML) {
+                localUser.sendHTML(conteudoAres);
             } else {
                 for (var i = 0; i < conteudoWebArray.length; i++) {
-                    print(u, conteudoWebArray[i]);
+                    print(localUser, conteudoWebArray[i]);
                 }
             }
         }
@@ -233,8 +233,8 @@ function enviarDual(user, conteudoAres, conteudoWebArray) {
 // ======================================================
 //  ENVIAR MENSAGEM - Função unificada
 // ======================================================
-function enviarMensagem(user, original, traduzido) {
-    var userData = getUserDisplayData(user);
+function enviarMensagem(userobj, original, traduzido) {
+    var userData = getUserDisplayData(userobj);
     var comTraducao = original.toLowerCase() !== traduzido.toLowerCase();
     
     // Conteúdo para Ares (HTML)
@@ -249,20 +249,20 @@ function enviarMensagem(user, original, traduzido) {
         conteudoWeb.push("   ↳ " + traduzido);
     }
     
-    enviarDual(user, conteudoAres, conteudoWeb);
+    enviarDual(userobj, conteudoAres, conteudoWeb);
 }
  
 // ======================================================
 //  EVENTO PRINCIPAL
 // ======================================================
-function onTextBefore(user, text) {
-    obterPaisUsuario(user);
+function onTextBefore(userobj, text) {
+    obterPaisUsuario(userobj);
  
-    if (podeMostrarAvatar(user.name)) {
-        mostrarAvatarComMoldura(user);
+    if (podeMostrarAvatar(userobj.name)) {
+        mostrarAvatarComMoldura(userobj);
     }
  
-    traduzirAutomatico(user, text);
+    traduzirAutomatico(userobj, text);
  
     return ""; // oculta o texto original
 }
