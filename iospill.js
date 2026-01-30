@@ -1,15 +1,60 @@
 // ======================================================
-//  Script v8 — iOS Pill + Tradução + Bandeiras + Minimalista ASCII
+//  Script v8 — iOS Pill + Tradução + Bandeiras + Minimalista ASCII (REFACTORED)
 // ======================================================
  
 print(0, "\x0314Script - iOS Pill Country Fixed v8.0");
  
 // CONFIGURAÇÕES
-var intervaloAvatar = 15;
+var CONFIG = {
+    intervaloAvatar: 15,
+    molduraURL: "http://i.imgur.com/9uYxq8W.png",
+    apiURLs: {
+        geo: "http://ip-api.com/json/",
+        translate: "http://translate.googleapis.com/translate_a/single",
+        flag: "https://flagcdn.com/w20/"
+    }
+};
+
 var ultimoAvatar = {};
-var paisUsuario = {};       // cache de país por IP
-var cacheTraducao = {};     // cache de traduções
-var molduraURL = "http://i.imgur.com/9uYxq8W.png";
+var paisUsuario = {};
+var cacheTraducao = {};
+ 
+// ======================================================
+//  MAPA DE BANDEIRAS (centralizado)
+// ======================================================
+var FLAGS_MAP = {
+    "BR":"🇧🇷","US":"🇺🇸","CA":"🇨🇦","MX":"🇲🇽","AR":"🇦🇷","CL":"🇨🇱","CO":"🇨🇴",
+    "PE":"🇵🇪","VE":"🇻🇪","UY":"🇺🇾","PY":"🇵🇾","BO":"🇧🇴","PT":"🇵🇹","ES":"🇪🇸",
+    "FR":"🇫🇷","IT":"🇮🇹","DE":"🇩🇪","NL":"🇳🇱","BE":"🇧🇪","CH":"🇨🇭","AT":"🇦🇹",
+    "SE":"🇸🇪","NO":"🇳🇴","DK":"🇩🇰","FI":"🇫🇮","GB":"🇬🇧","IE":"🇮🇪","RU":"🇷🇺",
+    "UA":"🇺🇦","PL":"🇵🇱","CZ":"🇨🇿","RO":"🇷🇴","HU":"🇭🇺","CN":"🇨🇳","JP":"🇯🇵",
+    "KR":"🇰🇷","IN":"🇮🇳","PH":"🇵🇭","ID":"🇮🇩","AU":"🇦🇺","NZ":"🇳🇿","ZA":"🇿🇦",
+    "EG":"🇪🇬","NG":"🇳🇬","TR":"🇹🇷","SA":"🇸🇦","AE":"🇦🇪"
+};
+ 
+// ======================================================
+//  UTILIDADES
+// ======================================================
+function escaparHTML(t) {
+    if (!t) return "";
+    return t.replace(/&/g,"&amp;").replace(/</g,"&lt;")
+            .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
+            .replace(/'/g,"&#39;");
+}
+
+function getUserCountryCode(user) {
+    return paisUsuario[user.externalIp] || "UN";
+}
+
+function getUserDisplayData(user) {
+    var countryCode = getUserCountryCode(user);
+    return {
+        nome: escaparHTML(user.name),
+        countryCode: countryCode,
+        emoji: bandeiraEmoji(countryCode),
+        avatar: "(•‿•)"
+    };
+}
  
 // ======================================================
 //  ANTI-FLOOD
@@ -18,7 +63,7 @@ function podeMostrarAvatar(nome) {
     var agora = Date.now();
     var ultimo = ultimoAvatar[nome] || 0;
  
-    if (agora - ultimo > intervaloAvatar) {
+    if (agora - ultimo > CONFIG.intervaloAvatar) {
         ultimoAvatar[nome] = agora;
         return true;
     }
@@ -33,7 +78,7 @@ function mostrarAvatarComMoldura(user) {
  
     var avatarScribble = user.avatar.toScribble();
     var moldura = new Scribble();
-    moldura.src = molduraURL;
+    moldura.src = CONFIG.molduraURL;
  
     moldura.oncomplete = function() {
         Users.local(function(u) {
@@ -51,25 +96,13 @@ function mostrarAvatarComMoldura(user) {
 //  BANDEIRAS — API + EMOJI
 // ======================================================
 function bandeiraAPI(countryCode) {
-    if (!countryCode) return "https://flagcdn.com/w20/un.png";
-    return "https://flagcdn.com/w20/" + countryCode.toLowerCase() + ".png";
+    if (!countryCode) return CONFIG.apiURLs.flag + "un.png";
+    return CONFIG.apiURLs.flag + countryCode.toLowerCase() + ".png";
 }
  
 function bandeiraEmoji(countryCode) {
     if (!countryCode) return "🌐";
-    countryCode = countryCode.toUpperCase();
- 
-    var flags = {
-        "BR":"🇧🇷","US":"🇺🇸","CA":"🇨🇦","MX":"🇲🇽","AR":"🇦🇷","CL":"🇨🇱","CO":"🇨🇴",
-        "PE":"🇵🇪","VE":"🇻🇪","UY":"🇺🇾","PY":"🇵🇾","BO":"🇧🇴","PT":"🇵🇹","ES":"🇪🇸",
-        "FR":"🇫🇷","IT":"🇮🇹","DE":"🇩🇪","NL":"🇳🇱","BE":"🇧🇪","CH":"🇨🇭","AT":"🇦🇹",
-        "SE":"🇸🇪","NO":"🇳🇴","DK":"🇩🇰","FI":"🇫🇮","GB":"🇬🇧","IE":"🇮🇪","RU":"🇷🇺",
-        "UA":"🇺🇦","PL":"🇵🇱","CZ":"🇨🇿","RO":"🇷🇴","HU":"🇭🇺","CN":"🇨🇳","JP":"🇯🇵",
-        "KR":"🇰🇷","IN":"🇮🇳","PH":"🇵🇭","ID":"🇮🇩","AU":"🇦🇺","NZ":"🇳🇿","ZA":"🇿🇦",
-        "EG":"🇪🇬","NG":"🇳🇬","TR":"🇹🇷","SA":"🇸🇦","AE":"🇦🇪"
-    };
- 
-    return flags[countryCode] || "🌐";
+    return FLAGS_MAP[countryCode.toUpperCase()] || "🌐";
 }
  
 // ======================================================
@@ -78,11 +111,11 @@ function bandeiraEmoji(countryCode) {
 function obterPaisUsuario(user) {
     var ip = user.externalIp;
  
-    if (paisUsuario[ip]) return; // já temos
+    if (paisUsuario[ip]) return;
  
     var req = new HttpRequest();
     req.utf = true;
-    req.src = "http://ip-api.com/json/" + ip + "?fields=countryCode";
+    req.src = CONFIG.apiURLs.geo + ip + "?fields=countryCode";
  
     req.oncomplete = function() {
         try {
@@ -97,77 +130,61 @@ function obterPaisUsuario(user) {
 }
  
 // ======================================================
-//  TRADUÇÃO — com cache
+//  TRADUÇÃO — Função genérica unificada
 // ======================================================
-function traduzirAutomatico(user, textoOriginal) {
- 
-    obterPaisUsuario(user);
- 
-    if (cacheTraducao[textoOriginal]) {
-        var t = cacheTraducao[textoOriginal];
-        enviarTraducao(user, textoOriginal, t);
-        return;
-    }
- 
+function traduzirPara(texto, idioma, onSuccess) {
     var req = new HttpRequest();
     req.utf = true;
- 
-    req.src = "http://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pt&dt=t&q=" +
-              encodeURIComponent(textoOriginal);
+    
+    var uri = encodeURIComponent(stripColors(texto));
+    req.src = CONFIG.apiURLs.translate + "?client=gtx&sl=auto&tl=" + idioma + "&dt=t&q=" + uri;
  
     req.oncomplete = function() {
         if (!this.page) return;
  
         try {
             var r = JSON.parse(this.page);
-            var traduzPT = r[0][0][0];
- 
-            if (textoOriginal.toLowerCase() != traduzPT.toLowerCase()) {
-                cacheTraducao[textoOriginal] = traduzPT;
-                enviarTraducao(user, textoOriginal, traduzPT);
-            } else {
-                traduzirParaES(user, textoOriginal);
-            }
- 
+            var traducao = r[0][0][0];
+            onSuccess(traducao);
         } catch(e) {}
     };
  
     req.download();
 }
+
+function traduzirAutomatico(user, textoOriginal) {
+    obterPaisUsuario(user);
  
-function traduzirParaES(user, texto) {
+    // Verifica cache
+    if (cacheTraducao[textoOriginal]) {
+        enviarMensagem(user, textoOriginal, cacheTraducao[textoOriginal]);
+        return;
+    }
  
-    var req = new HttpRequest();
-    req.utf = true;
- 
-    req.src = "http://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=es&dt=t&q=" +
-              encodeURIComponent(texto);
- 
-    req.oncomplete = function() {
-        if (!this.page) return;
- 
-        try {
-            var r = JSON.parse(this.page);
-            var traduzES = r[0][0][0];
- 
-            if (texto.toLowerCase() != traduzES.toLowerCase()) {
-                cacheTraducao[texto] = traduzES;
-                enviarTraducao(user, texto, traduzES);
-            } else {
-                enviarSemTraducao(user, texto);
-            }
- 
-        } catch(e) {}
-    };
- 
-    req.download();
+    // Tenta traduzir para PT
+    traduzirPara(textoOriginal, "pt", function(traduzPT) {
+        if (textoOriginal.toLowerCase() !== traduzPT.toLowerCase()) {
+            cacheTraducao[textoOriginal] = traduzPT;
+            enviarMensagem(user, textoOriginal, traduzPT);
+        } else {
+            // Se PT não funcionou, tenta ES
+            traduzirPara(textoOriginal, "es", function(traduzES) {
+                if (textoOriginal.toLowerCase() !== traduzES.toLowerCase()) {
+                    cacheTraducao[textoOriginal] = traduzES;
+                    enviarMensagem(user, textoOriginal, traduzES);
+                } else {
+                    // Sem tradução necessária
+                    enviarMensagem(user, textoOriginal, textoOriginal);
+                }
+            });
+        }
+    });
 }
  
 // ======================================================
 //  CAIXA iOS PILL (Ares)
 // ======================================================
 function caixaAres(nome, original, traduzido, countryCode) {
- 
     var flagURL = bandeiraAPI(countryCode);
  
     return "<div style='" +
@@ -197,12 +214,11 @@ function caixaAres(nome, original, traduzido, countryCode) {
 }
  
 // ======================================================
-//  ENVIO DUAL (Ares + Web)
+//  ENVIO DUAL (Ares + Web) - Unificado
 // ======================================================
 function enviarDual(user, conteudoAres, conteudoWebArray) {
     Users.local(function(u) {
         if (u.vroom === user.vroom) {
- 
             if (u.canHTML) {
                 u.sendHTML(conteudoAres);
             } else {
@@ -215,59 +231,31 @@ function enviarDual(user, conteudoAres, conteudoWebArray) {
 }
  
 // ======================================================
-//  ENVIAR COM TRADUÇÃO — Minimalista + Avatar ASCII
+//  ENVIAR MENSAGEM - Função unificada
 // ======================================================
-function enviarTraducao(user, original, traduzido) {
- 
-    var nome = escaparHTML(user.name);
-    var countryCode = paisUsuario[user.externalIp] || "UN";
-    var emoji = bandeiraEmoji(countryCode);
-    var avatar = "(•‿•)";
- 
-    var conteudoAres = caixaAres(nome, original, traduzido, countryCode);
- 
+function enviarMensagem(user, original, traduzido) {
+    var userData = getUserDisplayData(user);
+    var comTraducao = original.toLowerCase() !== traduzido.toLowerCase();
+    
+    // Conteúdo para Ares (HTML)
+    var conteudoAres = caixaAres(userData.nome, original, traduzido, userData.countryCode);
+    
+    // Conteúdo para Web (texto simples)
     var conteudoWeb = [
-        avatar + " " + emoji + " " + nome + ": " + original,
-        "   ↳ " + traduzido
+        userData.avatar + " " + userData.emoji + " " + userData.nome + ": " + original
     ];
- 
+    
+    if (comTraducao) {
+        conteudoWeb.push("   ↳ " + traduzido);
+    }
+    
     enviarDual(user, conteudoAres, conteudoWeb);
-}
- 
-// ======================================================
-//  ENVIAR SEM TRADUÇÃO — Minimalista + Avatar ASCII
-// ======================================================
-function enviarSemTraducao(user, texto) {
- 
-    var nome = escaparHTML(user.name);
-    var countryCode = paisUsuario[user.externalIp] || "UN";
-    var emoji = bandeiraEmoji(countryCode);
-    var avatar = "(•‿•)";
- 
-    var conteudoAres = caixaAres(nome, texto, texto, countryCode);
- 
-    var conteudoWeb = [
-        avatar + " " + emoji + " " + nome + ": " + texto
-    ];
- 
-    enviarDual(user, conteudoAres, conteudoWeb);
-}
- 
-// ======================================================
-//  ESCAPAR HTML
-// ======================================================
-function escaparHTML(t) {
-    if (!t) return "";
-    return t.replace(/&/g,"&amp;").replace(/</g,"&lt;")
-            .replace(/>/g,"&gt;").replace(/"/g,"&quot;")
-            .replace(/'/g,"&#39;");
 }
  
 // ======================================================
 //  EVENTO PRINCIPAL
 // ======================================================
 function onTextBefore(user, text) {
- 
     obterPaisUsuario(user);
  
     if (podeMostrarAvatar(user.name)) {
