@@ -42,14 +42,14 @@ function escaparHTML(t) {
             .replace(/'/g,"&#39;");
 }
 
-function getUserCountryCode(user) {
-    return paisUsuario[user.externalIp] || "UN";
+function getUserCountryCode(userobj) {
+    return paisUsuario[userobj.externalIp] || "UN";
 }
 
-function getUserDisplayData(user) {
-    var countryCode = getUserCountryCode(user);
+function getUserDisplayData(userobj) {
+    var countryCode = getUserCountryCode(userobj);
     return {
-        nome: escaparHTML(user.name),
+        nome: escaparHTML(userobj.name),
         countryCode: countryCode,
         emoji: bandeiraEmoji(countryCode),
         avatar: "(•‿•)"
@@ -73,16 +73,16 @@ function podeMostrarAvatar(nome) {
 // ======================================================
 //  AVATAR + MOLDURA
 // ======================================================
-function mostrarAvatarComMoldura(user) {
-    if (!user.avatar) return;
+function mostrarAvatarComMoldura(userobj) {
+    if (!userobj.avatar) return;
  
-    var avatarScribble = user.avatar.toScribble();
+    var avatarScribble = userobj.avatar.toScribble();
     var moldura = new Scribble();
     moldura.src = CONFIG.molduraURL;
  
     moldura.oncomplete = function() {
         Users.local(function(u) {
-            if (u.vroom === user.vroom) {
+            if (u.vroom === userobj.vroom) {
                 u.scribble(avatarScribble);
                 u.scribble(moldura);
             }
